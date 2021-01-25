@@ -1,0 +1,12 @@
+{
+  "name": "HypertagBot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Pneuma714/HypertagBot.git",
+  "author": "Pneuma <syca0714@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^12.5.1",
+    "dotenv": "^8.2.0"
+  }
+}
