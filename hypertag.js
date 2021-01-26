@@ -6,26 +6,38 @@ const Hypertag = {
         let textToken = ''
 
         for (let i = 0; i < text.length; i++) {
-            if (text[i] === '{' || text[i] === '}') {
+            if (text[i] === '{') {
                 if (text[i - 1] === '\\') {
-                    textToken += text[i]
+                    textToken += '{'
                     continue
                 }
-                if (textToken !== '') {
+                else if (textToken !== '') {
                     tokens.push(textToken)
                     textToken = ''
                 }
-                tokens.push(text[i])
+                tokens.push('{')
+            }
+            else if (text[i] === '}') {
+                if (text[i - 1] === '\\') {
+                    textToken += '}'
+                    continue
+                }
+                else if (textToken !== '' || text[i - 1] === ';') {
+                    tokens.push(textToken)
+                    textToken = ''
+                }
+                tokens.push('}')
             }
             else if (text[i] === ';') {
                 if (text[i - 1] === '\\') {
                     textToken += ';'
                     continue
                 }
-                if (textToken !== '') {
+                else if (textToken !== '' || text[i - 1] === ';') {
                     tokens.push(textToken)
                     textToken = ''
                 }
+                tokens.push(';')
             }
             else if (text[i] === '\\') {
                 if (text[i - 1] === '\\') {
@@ -63,71 +75,94 @@ const Hypertag = {
         return tree
     },
 
-    evaluate (params, args) {
-        for (let i = 0; i < params.length; i++) {
-            if (typeof params[i] === 'object') params[i] = this.evaluate(params[i], args)
+    evaluate (_params, args, discordMsg) {
+
+        // Evaluate child parameters
+        for (let i = 0; i < _params.length; i++) {
+            if (typeof _params[i] === 'object') _params[i] = this.evaluate(_params[i], args, discordMsg)
         }
 
-        if (params[0] === 'args') {
-            return args[params[1]] || 'none'
+        // Delete semicolons and Merge each parameters
+        let params = [], p = ''
+        for (let i = 0; i < _params.length; i++) {
+            if (_params[i] === ';') {
+                params.push(p)
+                p = ''
+            }
+            else p += _params[i]
+        }
+        params.push(p)
+
+        const func = params.shift()
+
+        if (func === 'args') {
+            return args[params[0]] || 'none'
         }
 
-        else if (params[0] === 'math') {
-            if (params[1] === '+') {
-                return parseInt(params[2]) + parseInt(params[3])
+        else if (func === 'math') {
+            if (params[0] === '+') {
+                return parseInt(params[1]) + parseInt(params[2])
             }
-            else if (params[1] === '-') {
-                return parseInt(params[2]) - parseInt(params[3])
+            else if (params[0] === '-') {
+                return parseInt(params[1]) - parseInt(params[2])
             }
-            else if (params[1] === '*') {
-                return parseInt(params[2]) * parseInt(params[3])
+            else if (params[0] === '*') {
+                return parseInt(params[1]) * parseInt(params[2])
             }
-            else if (params[1] === '/') {
-                if (params[3] === 0) return NaN
-                return parseInt(params[2]) / parseInt(params[3])
+            else if (params[0] === '/') {
+                if (params[2] === 0) return NaN
+                return parseInt(params[1]) / parseInt(params[2])
             }
             else {
                 return ''
             }
         }
 
-        else if (params[0] === 'if') {
-            if (params[2] === '==') {
-                return params[1] === params[3] ? params[4] : params[5]
+        else if (func === 'if') {
+            if (params[1] === '==') {
+                return params[0] === params[2] ? params[3] : params[4]
             }
-            else if (params[2] === '>') {
-                return params[1] > params[3] ? params[4] : params[5]
+            else if (params[1] === '>') {
+                return params[0] > params[2] ? params[3] : params[4]
             }
-            else if (params[2] === '<') {
-                return params[1] < params[3] ? params[4] : params[5]
+            else if (params[1] === '<') {
+                return params[0] < params[2] ? params[3] : params[4]
             }
-            else if (params[2] === '>=') {
-                return params[1] >= params[3] ? params[4] : params[5]
+            else if (params[1] === '>=') {
+                return params[0] >= params[2] ? params[3] : params[4]
             }
-            else if (params[2] === '<=') {
-                return params[1] <= params[3] ? params[4] : params[5]
+            else if (params[1] === '<=') {
+                return params[0] <= params[2] ? params[3] : params[4]
             }
-            else if (params[2] === '!=') {
-                return params[1] !== params[3] ? params[4] : params[5]
+            else if (params[1] === '!=') {
+                return params[0] !== params[2] ? params[3] : params[4]
             }
             else {
                 return ''
             }
         }
 
-        else if (params[0] === 'set') {
-            this.storage[params[1]] = params[2]
+        else if (func === 'set') {
+            this.storage[params[0]] = params[1]
             return ''
         }
 
-        else if (params[0] === 'get') {
-            if (!params[1]) return 'none'
-            return this.storage[params[1]]
+        else if (func === 'get') {
+            if (!params[0]) return 'none'
+            return this.storage[params[0]] || 'none'
         }
 
-        else if (params[0] === 'random') {
-            params.shift()
+        else if (func === 'random') {
             return params[Math.floor(Math.random() * params.length)]
+        }
+
+        else if (func === 'discord') {
+            if (params[0] === 'userid') return discordMsg.author.id
+            else if (params[0] === 'username') return discordMsg.author.username
+            else if (params[0] === 'nickname') return discordMsg.member.nickname
+            else if (params[0] === 'channelid') return discordMsg.channel.id
+            else if (params[0] === 'guildid') return discordMsg.guild.id
+            else return ''
         }
 
         else {
@@ -135,14 +170,14 @@ const Hypertag = {
         }
     },
 
-    execute (text, args) {
+    execute (text, args, discordMsg) {
         const tokens = this.tokenize(text)
         const tree = this.parse(tokens)
 
         let result = ''
         for (let i = 0; i < tree.length; i++) {
             if (typeof tree[i] === 'object') {
-                tree[i] = this.evaluate(tree[i], args)
+                tree[i] = this.evaluate(tree[i], args, discordMsg)
             }
             result += tree[i]
         }
@@ -150,5 +185,7 @@ const Hypertag = {
         return result
     }
 }
+
+// console.log(Hypertag.execute('{set;dobak_{discord;userid};{if;{get;dobak_{discord;userid}};==;none;100;{get;dobak_{discord;userid}}}}{if;{math;+;0;{args;0}};==;NaN;숫자를 입력해주세요;{if;{get;dobak_{discord;userid}};<;{args;0};가지고 있는 금액보다 많이 베팅할 수 없습니다;}}{set;dobakok;{if;{math;+;0;{args;0}};==;NaN;no;{if;{get;dobak_{discord;userid}};<;{args;0};no;yes}}}{set;dobakrandom;{random;-1;0;1}}{set;dobak_{discord;userid};{if;{get;dobakok};==;no;{get;dobak_{discord;userid}};{math;+;{math;*;{args;0};{get;dobakrandom}};{get;dobak_{discord;userid}}}}}{if;{get;dobakok};==;no;;{if;{get;dobakrandom};==;-1;저런~ 돈이 날아갔습니다 -{args;0};{if;{get;dobakrandom};==;0;돈이 그대로입니다 ±0;돈이 불어났습니다 +{args;0}}}}', [ 10 ], { author: { id: 12345 } }))
 
 module.exports = Hypertag
