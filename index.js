@@ -40,7 +40,24 @@ client.on('message', msg => {
     const args = content.split(' ')
     const command = args.shift()
 
-    if (command === 'add') {
+    if (command === 'help') {
+        const embed = new Discord.MessageEmbed({
+            title: 'Hypertag 도움말',
+            description: '하이퍼태그는 명령어와 봇의 대답을 사용자가 추가할 수 있는 봇입니다.\n' +
+                '나아가 자체적인 문법을 지원하여 동적인 명령어를 만들 수 있습니다.\n\n' +
+                '**기본 명령어**\n' +
+                '- h.add : 태그 추가하기\n' +
+                '- h.edit : 태그 수정하기\n' +
+                '- h.raw : 태그 내용 보기\n' +
+                '- h.delete : 태그 삭제하기\n' +
+                '- h.list : 서버 내 태그 목록 보기\n\n' +
+                '※ 수정은 __태그 작성자__만, 삭제는 __작성자와 서버 소유자__만 가능합니다.\n\n'
+        })
+
+        msg.channel.send(embed)
+    }
+
+    else if (command === 'add') {
         const tagName = args.shift()
         const tagContent = args.join(' ')
 
@@ -59,7 +76,19 @@ client.on('message', msg => {
     }
 
     else if (command === 'edit') {
-        // TODO
+        const tagName = args.shift()
+        const tagContent = args.join(' ')
+
+        if (!tagName) return msg.reply('태그 이름을 입력해주세요.')
+        if (tagName.includes('.') || !client.tags.has(msg.guild.id, tagName)) return msg.reply('존재하지 않는 태그입니다.')
+
+        if (msg.author.id !== client.tags.get(msg.guild.id, tagName + '.author')) return msg.reply('태그를 수정할 권한이 없습니다.')
+
+        if (!tagContent) return msg.reply('태그 내용을 입력해주세요.')
+
+        client.tags.set(msg.guild.id, tagContent, tagName + '.content')
+
+        msg.channel.send(`\`${tagName}\` 태그가 저장되었습니다.`)
     }
 
     else if (command === 'delete') {
@@ -75,7 +104,12 @@ client.on('message', msg => {
     }
 
     else if (command === 'raw') {
-        // TODO
+        const tagName = args.shift()
+
+        if (!tagName) return msg.reply('확인할 태그를 입력해주세요.')
+        if (tagName.includes('.') || !client.tags.has(msg.guild.id, tagName)) return msg.reply('존재하지 않는 태그입니다.')
+
+        msg.channel.send(client.tags.get(msg.guild.id, tagName + '.content'), { code: 'txt' })
     }
 
     else if (command === 'list') {
@@ -94,7 +128,7 @@ client.on('message', msg => {
         if (!tagContent) return msg.reply('존재하지 않는 태그입니다.')
 
         const result = Hypertag.execute(tagContent, args, msg)
-        if (result) msg.channel.send(result)
+        msg.channel.send(result || '** **')
     }
 })
 
