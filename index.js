@@ -21,7 +21,7 @@ client.on('ready', () => {
     })
 })
 
-client.on('gulidCreate', guild => {
+client.on('guildCreate', guild => {
     if (!client.tags.has(guild.id)) client.tags.set(guild.id, {})
     if (!client.storage.has(guild.id)) client.storage.set(guild.id, {})
 
@@ -51,7 +51,9 @@ client.on('message', msg => {
                 '- h.raw : 태그 내용 보기\n' +
                 '- h.delete : 태그 삭제하기\n' +
                 '- h.list : 서버 내 태그 목록 보기\n\n' +
-                '※ 수정은 __태그 작성자__만, 삭제는 __작성자와 서버 소유자__만 가능합니다.\n\n'
+                '※ 수정은 __태그 작성자__만, 삭제는 __작성자와 서버 소유자__만 가능합니다.\n\n' +
+                '**문법**\n' +
+                '[깃헙 문서](https://github.com/Pneuma714/HypertagBot/blob/master/readme.md)를 참고해주세요.'
         })
 
         msg.channel.send(embed)
