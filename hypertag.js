@@ -1,5 +1,4 @@
 const Hypertag = {
-    storage: {},
 
     tokenize (text) {
         const tokens = []
@@ -143,13 +142,13 @@ const Hypertag = {
         }
 
         else if (func === 'set') {
-            this.storage[params[0]] = params[1]
+            if (params[0]) discordMsg.client.storage.set(discordMsg.guild.id, params[1], params[0])
             return ''
         }
 
         else if (func === 'get') {
-            if (!params[0]) return 'none'
-            return this.storage[params[0]] || 'none'
+            if (!params[0]) return ''
+            return discordMsg.client.storage.get(discordMsg.guild.id, params[0]) || 'none'
         }
 
         else if (func === 'random') {
@@ -185,7 +184,5 @@ const Hypertag = {
         return result
     }
 }
-
-// console.log(Hypertag.execute('{set;dobak_{discord;userid};{if;{get;dobak_{discord;userid}};==;none;100;{get;dobak_{discord;userid}}}}{if;{math;+;0;{args;0}};==;NaN;숫자를 입력해주세요;{if;{get;dobak_{discord;userid}};<;{args;0};가지고 있는 금액보다 많이 베팅할 수 없습니다;}}{set;dobakok;{if;{math;+;0;{args;0}};==;NaN;no;{if;{get;dobak_{discord;userid}};<;{args;0};no;yes}}}{set;dobakrandom;{random;-1;0;1}}{set;dobak_{discord;userid};{if;{get;dobakok};==;no;{get;dobak_{discord;userid}};{math;+;{math;*;{args;0};{get;dobakrandom}};{get;dobak_{discord;userid}}}}}{if;{get;dobakok};==;no;;{if;{get;dobakrandom};==;-1;저런~ 돈이 날아갔습니다 -{args;0};{if;{get;dobakrandom};==;0;돈이 그대로입니다 ±0;돈이 불어났습니다 +{args;0}}}}', [ 10 ], { author: { id: 12345 } }))
 
 module.exports = Hypertag
