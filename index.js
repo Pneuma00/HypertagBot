@@ -10,15 +10,20 @@ const Enmap = require('enmap')
 client.tags = new Enmap({ name: 'tags' })
 client.storage = new Enmap({ name: 'storage' })
 
-client.on('ready', () => {
+client.config = require('./config.json')
+
+client.on('ready', async () => {
     console.log(`Logged in as ${client.user.tag}.`)
 
     client.user.setActivity('h.add 태그 | h.태그')
 
-    client.guilds.cache.forEach(g => {
+    client.guilds.cache.array().forEach(g => {
         if (!client.tags.has(g.id)) client.tags.set(g.id, {})
         if (!client.storage.has(g.id)) client.storage.set(g.id, {})
     })
+
+    const statusMessage = await client.channels.cache.get(client.config.statusChannel).messages.fetch(client.config.statusMessage)
+    statusMessage.edit(':green_circle: **Bot is Online**')
 })
 
 client.on('guildCreate', guild => {
@@ -135,3 +140,16 @@ client.on('message', msg => {
 })
 
 client.login(process.env.DISCORD_TOKEN)
+
+const stop = async () => {
+    console.log('Stopping bot...')
+
+    const statusMessage = await client.channels.cache.get(client.config.statusChannel).messages.fetch(client.config.statusMessage)
+    await statusMessage.edit(':red_circle: **Bot is Offline**')
+
+    process.exit()
+}
+
+process.on('SIGINT', stop) // Ctrl + C
+
+process.on('SIGHUP', stop) // Close Console
