@@ -22,8 +22,9 @@ client.on('ready', async () => {
         if (!client.storage.has(g.id)) client.storage.set(g.id, {})
     })
 
-    const statusMessage = await client.channels.cache.get(client.config.statusChannel).messages.fetch(client.config.statusMessage)
-    statusMessage.edit(':green_circle: **Bot is Online**')
+    const statusChannel = client.channels.cache.get(client.config.statusChannel)
+    statusChannel.setTopic(':green_circle: **Online**')
+    statusChannel.send(`[${new Date().toLocaleString('ko-KR')}] :green_circle: Bot is Online`)
 })
 
 client.on('guildCreate', guild => {
@@ -47,6 +48,7 @@ client.on('message', msg => {
 
     if (command === 'help') {
         const embed = new Discord.MessageEmbed({
+            color: '#00b0f0',
             title: 'Hypertag 도움말',
             description: '하이퍼태그는 명령어와 봇의 대답을 사용자가 추가할 수 있는 봇입니다.\n' +
                 '나아가 자체적인 문법을 지원하여 동적인 명령어를 만들 수 있습니다.\n\n' +
@@ -55,10 +57,13 @@ client.on('message', msg => {
                 '- h.edit : 태그 수정하기\n' +
                 '- h.raw : 태그 내용 보기\n' +
                 '- h.delete : 태그 삭제하기\n' +
+                '- h.info : 태그 정보 확인하기\n' +
                 '- h.list : 서버 내 태그 목록 보기\n\n' +
                 '※ 수정은 __태그 작성자__만, 삭제는 __작성자와 서버 소유자__만 가능합니다.\n\n' +
                 '**문법**\n' +
-                '[깃헙 문서](https://github.com/Pneuma714/HypertagBot/blob/master/readme.md)를 참고해주세요.'
+                '[깃헙 문서](https://github.com/Pneuma714/HypertagBot/blob/master/readme.md)를 참고해주세요.\n\n' +
+                '**공식 서버**\n' +
+                'https://discord.gg/fejtMXeYKR'
         })
 
         msg.channel.send(embed)
@@ -98,6 +103,15 @@ client.on('message', msg => {
         msg.channel.send(`\`${tagName}\` 태그가 저장되었습니다.`)
     }
 
+    else if (command === 'raw') {
+        const tagName = args.shift()
+
+        if (!tagName) return msg.reply('확인할 태그를 입력해주세요.')
+        if (tagName.includes('.') || !client.tags.has(msg.guild.id, tagName)) return msg.reply('존재하지 않는 태그입니다.')
+
+        msg.channel.send(client.tags.get(msg.guild.id, tagName + '.content'), { code: 'txt' })
+    }
+
     else if (command === 'delete') {
         const tagName = args.shift()
 
@@ -110,13 +124,21 @@ client.on('message', msg => {
         msg.channel.send(`\`${tagName}\` 태그를 삭제했습니다.`)
     }
 
-    else if (command === 'raw') {
+    else if (command === 'info') {
         const tagName = args.shift()
 
-        if (!tagName) return msg.reply('확인할 태그를 입력해주세요.')
+        if (!tagName) return msg.reply('정보를 확인할 태그를 입력해주세요.')
         if (tagName.includes('.') || !client.tags.has(msg.guild.id, tagName)) return msg.reply('존재하지 않는 태그입니다.')
 
-        msg.channel.send(client.tags.get(msg.guild.id, tagName + '.content'), { code: 'txt' })
+        const tag = client.tags.get(msg.guild.id, tagName)
+
+        const embed = new Discord.MessageEmbed({
+            color: '#00b0f0',
+            title: `${tagName} 태그 정보`,
+            description: `**작성자** : ${client.users.cache.get(tag.author).tag}\n**사용 횟수** : ${tag.usage}회`
+        })
+
+        msg.channel.send(embed)
     }
 
     else if (command === 'list') {
@@ -135,7 +157,9 @@ client.on('message', msg => {
         if (!tagContent) return msg.reply('존재하지 않는 태그입니다.')
 
         const result = Hypertag.execute(tagContent, args, msg)
-        msg.channel.send(result || '** **')
+        msg.channel.send(result || '** **', { disableMentions: 'everyone' })
+
+        client.tags.inc(msg.guild.id, command + '.usage')
     }
 })
 
@@ -143,9 +167,10 @@ client.login(process.env.DISCORD_TOKEN)
 
 const stop = async () => {
     console.log('Stopping bot...')
-
-    const statusMessage = await client.channels.cache.get(client.config.statusChannel).messages.fetch(client.config.statusMessage)
-    await statusMessage.edit(':red_circle: **Bot is Offline**')
+    
+    const statusChannel = client.channels.cache.get(client.config.statusChannel)
+    await statusChannel.setTopic(':red_circle: **Offline**')
+    await statusChannel.send(`[${new Date().toLocaleString('ko-KR')}] :red_circle: Bot is Offline`)
 
     process.exit()
 }

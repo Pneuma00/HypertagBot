@@ -5,38 +5,16 @@ const Hypertag = {
         let textToken = ''
 
         for (let i = 0; i < text.length; i++) {
-            if (text[i] === '{') {
+            if ([ '{', ';', '}' ].includes(text[i])) {
                 if (text[i - 1] === '\\') {
-                    textToken += '{'
+                    textToken += text[i]
                     continue
                 }
-                else if (textToken !== '') {
+                else if (textToken !== '' || text[i] !== '{' && text[i - 1] === ';') {
                     tokens.push(textToken)
                     textToken = ''
                 }
-                tokens.push('{')
-            }
-            else if (text[i] === '}') {
-                if (text[i - 1] === '\\') {
-                    textToken += '}'
-                    continue
-                }
-                else if (textToken !== '' || text[i - 1] === ';') {
-                    tokens.push(textToken)
-                    textToken = ''
-                }
-                tokens.push('}')
-            }
-            else if (text[i] === ';') {
-                if (text[i - 1] === '\\') {
-                    textToken += ';'
-                    continue
-                }
-                else if (textToken !== '' || text[i - 1] === ';') {
-                    tokens.push(textToken)
-                    textToken = ''
-                }
-                tokens.push(';')
+                tokens.push(text[i])
             }
             else if (text[i] === '\\') {
                 if (text[i - 1] === '\\') {
@@ -75,13 +53,10 @@ const Hypertag = {
     },
 
     evaluate (_params, args, discordMsg) {
-
-        // Evaluate child parameters
         for (let i = 0; i < _params.length; i++) {
             if (typeof _params[i] === 'object') _params[i] = this.evaluate(_params[i], args, discordMsg)
         }
 
-        // Delete semicolons and Merge each parameters
         let params = [], p = ''
         for (let i = 0; i < _params.length; i++) {
             if (_params[i] === ';') {
@@ -156,11 +131,25 @@ const Hypertag = {
         }
 
         else if (func === 'discord') {
-            if (params[0] === 'userid') return discordMsg.author.id
-            else if (params[0] === 'username') return discordMsg.author.username
-            else if (params[0] === 'nickname') return discordMsg.member.nickname
-            else if (params[0] === 'channelid') return discordMsg.channel.id
-            else if (params[0] === 'guildid') return discordMsg.guild.id
+            if (params[0] === 'user') {
+                if (params[1] === 'id') return discordMsg.author.id
+                else if (params[1] === 'name') return discordMsg.author.username
+                else if (params[1] === 'nick') return discordMsg.member.nickname
+            }
+            else if (params[0] === 'channel') {
+                if (params[1] === 'id') return discordMsg.channel.id
+                else if (params[1] === 'name') return discordMsg.channel.name
+                else if (params[1] === 'topic') return discordMsg.channel.topic
+            }
+            else if (params[0] === 'guild') {
+                if (params[1] === 'id') return discordMsg.guild.id
+                else if (params[1] === 'name') return discordMsg.guild.name
+                else if (params[1] === 'owner') {
+                    if (params[2] === 'id') return discordMsg.guild.owner.id
+                    else if (params[2] === 'name') return discordMsg.guild.owner.user.username
+                    else if (params[2] === 'nick') return discordMsg.guild.owner.nickname
+                }
+            }
             else return ''
         }
 
