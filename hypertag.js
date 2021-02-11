@@ -70,6 +70,7 @@ const Hypertag = {
         const func = params.shift()
 
         if (func === 'args') {
+            if (isNaN(params[0])) return ''
             return args[params[0]] || 'none'
         }
 

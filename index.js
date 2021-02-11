@@ -23,8 +23,23 @@ client.on('ready', async () => {
     })
 
     const statusChannel = client.channels.cache.get(client.config.statusChannel)
-    statusChannel.setTopic(':green_circle: **Online**')
+    await (await statusChannel.messages.fetch(statusChannel.lastMessageID)).delete()
     statusChannel.send(`[${new Date().toLocaleString('ko-KR')}] :green_circle: Bot is Online`)
+
+    statusChannel.send(new Discord.MessageEmbed({
+        title: ':green_circle: **Online**',
+        description: `${client.guilds.cache.size} Guilds **|** ${client.users.cache.size} Users **|** ${client.tags.map(guildTags => Object.keys(guildTags).length).reduce((a, b) => a + b)} Tags`
+    }).setColor('GREEN'))
+
+    const updateStatus = () => {
+        const embed = new Discord.MessageEmbed({
+            title: ':green_circle: **Online**',
+            description: `${client.guilds.cache.size} Guilds **|** ${client.users.cache.size} Users **|** ${client.tags.map(guildTags => Object.keys(guildTags).length).reduce((a, b) => a + b)} Tags`
+        }).setColor('GREEN')
+        statusChannel.lastMessage.edit(embed)
+    }
+
+    client.setInterval(updateStatus, 1000 * 60)
 })
 
 client.on('guildCreate', guild => {
@@ -150,6 +165,31 @@ client.on('message', msg => {
         // TODO
     }
     
+    else if (command === 'eval') {
+        if (msg.author.id !== '307686292035207179') return msg.reply('권한이 없습니다.')
+
+        const clean = text => {
+            if (typeof(text) === 'string')
+                return text.replace(/`/g, '`' + String.fromCharCode(8203)).replace(/@/g, '@' + String.fromCharCode(8203));
+            else
+                return text;
+        }
+        
+        try {
+            const code = args.join(' ')
+            let result = eval(code)
+
+            if (typeof result !== 'string')
+                result = require('util').inspect(result);
+
+
+            msg.channel.send(clean(result), { code: 'xl' });
+        }
+        catch (err) {
+            msg.channel.send(`\`ERROR\` \`\`\`xl\n${clean(err)}\n\`\`\``);
+        }
+    }
+
     else {
         if (command.includes('.')) return msg.reply('존재하지 않는 태그입니다.')
 
@@ -167,10 +207,14 @@ client.login(process.env.DISCORD_TOKEN)
 
 const stop = async () => {
     console.log('Stopping bot...')
-    
+
     const statusChannel = client.channels.cache.get(client.config.statusChannel)
-    await statusChannel.setTopic(':red_circle: **Offline**')
+    await (await statusChannel.messages.fetch(statusChannel.lastMessageID)).delete()
     await statusChannel.send(`[${new Date().toLocaleString('ko-KR')}] :red_circle: Bot is Offline`)
+
+    await statusChannel.send(new Discord.MessageEmbed({
+        title: ':red_circle: **Offline**'
+    }).setColor('RED'))
 
     process.exit()
 }
